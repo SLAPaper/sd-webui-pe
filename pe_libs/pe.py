@@ -1,5 +1,5 @@
+import functools as ft
 import math
-import pathlib
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -9,7 +9,7 @@ from transformers.generation.logits_process import LogitsProcessorList
 from ldm_patched.modules import model_management
 from ldm_patched.modules.model_patcher import ModelPatcher
 
-from .utils import neg_inf, set_seed, model_path
+from .utils import model_path, neg_inf, set_seed
 
 expansion_path = model_path / "expansion"
 
@@ -75,20 +75,18 @@ class PromptsExpansion:
             f"Prompt Expansion engine loaded for {load_device}, use_fp16 = {use_fp16}."
         )
 
-    @torch.no_grad()
-    @torch.inference_mode()
     def logits_processor(self, input_ids, scores):
-        assert scores.ndim == 2 and scores.shape[0] == 1
-        self.logits_bias = self.logits_bias.to(scores)
+        with torch.inference_mode():
+            assert scores.ndim == 2 and scores.shape[0] == 1
+            self.logits_bias = self.logits_bias.to(scores)
 
-        bias = self.logits_bias.clone()
-        bias[0, input_ids[0].to(bias.device).long()] = neg_inf
-        bias[0, 11] = 0
+            bias = self.logits_bias.clone()
+            bias[0, input_ids[0].to(bias.device).long()] = neg_inf
+            bias[0, 11] = 0
 
-        return scores + bias
+            return scores + bias
 
-    @torch.no_grad()
-    @torch.inference_mode()
+    @ft.lru_cache(maxsize=1024)
     def __call__(self, prompt: str, seed: int) -> str:
         if prompt == "":
             return ""
@@ -100,29 +98,30 @@ class PromptsExpansion:
         prompt = safe_str(prompt) + ","
         set_seed(seed)
 
-        tokenized_kwargs = self.tokenizer(prompt, return_tensors="pt")
-        tokenized_kwargs.data["input_ids"] = tokenized_kwargs.data["input_ids"].to(
-            self.patcher.load_device
-        )
-        tokenized_kwargs.data["attention_mask"] = tokenized_kwargs.data[
-            "attention_mask"
-        ].to(self.patcher.load_device)
+        with torch.inference_mode():
+            tokenized_kwargs = self.tokenizer(prompt, return_tensors="pt")
+            tokenized_kwargs.data["input_ids"] = tokenized_kwargs.data["input_ids"].to(
+                self.patcher.load_device
+            )
+            tokenized_kwargs.data["attention_mask"] = tokenized_kwargs.data[
+                "attention_mask"
+            ].to(self.patcher.load_device)
 
-        current_token_length = int(tokenized_kwargs.data["input_ids"].shape[1])
-        max_token_length = 75 * int(math.ceil(float(current_token_length) / 75.0))
-        max_new_tokens = max_token_length - current_token_length
+            current_token_length = int(tokenized_kwargs.data["input_ids"].shape[1])
+            max_token_length = 75 * int(math.ceil(float(current_token_length) / 75.0))
+            max_new_tokens = max_token_length - current_token_length
 
-        # https://huggingface.co/blog/introducing-csearch
-        # https://huggingface.co/docs/transformers/generation_strategies
-        features = self.model.generate(
-            **tokenized_kwargs,
-            top_k=100,
-            max_new_tokens=max_new_tokens,
-            do_sample=True,
-            logits_processor=LogitsProcessorList([self.logits_processor]),
-        )
+            # https://huggingface.co/blog/introducing-csearch
+            # https://huggingface.co/docs/transformers/generation_strategies
+            features = self.model.generate(
+                **tokenized_kwargs,
+                top_k=100,
+                max_new_tokens=max_new_tokens,
+                do_sample=True,
+                logits_processor=LogitsProcessorList([self.logits_processor]),
+            )
 
-        response = self.tokenizer.batch_decode(features, skip_special_tokens=True)
-        result = safe_str(response[0])
+            response = self.tokenizer.batch_decode(features, skip_special_tokens=True)
+            result = safe_str(response[0])
 
-        return result
+            return result

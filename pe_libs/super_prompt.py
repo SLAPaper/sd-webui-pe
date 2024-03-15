@@ -15,6 +15,7 @@
 """SuperPrompt v1 from https://huggingface.co/roborovski/superprompt-v1"""
 
 
+import functools as ft
 import logging
 import pathlib
 import typing as tg
@@ -45,8 +46,7 @@ model: T5ForConditionalGeneration = T5ForConditionalGeneration.from_pretrained(
 )
 
 
-@torch.no_grad()
-@torch.inference_mode()
+@ft.lru_cache(maxsize=1024)
 def super_prompt(text: str, seed: int) -> str:
     """SuperPrompt v1 from https://huggingface.co/roborovski/superprompt-v1"""
     if not enable_superprompt:
@@ -57,11 +57,12 @@ def super_prompt(text: str, seed: int) -> str:
     opts = tg.cast(options.Options, shared.options)
     num_tokens = getattr(opts, "SuperPrompt_V1_Max_Tokens", 150)
 
-    input_text = f"Expand the following prompt to add more detail: {text}"
-    input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to("cuda")
+    with torch.inference_mode():
+        input_text = f"Expand the following prompt to add more detail: {text}"
+        input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to("cuda")
 
-    model.to("cuda")
-    outputs = model.generate(input_ids, max_length=num_tokens)
-    model.to("cpu")
+        model.to("cuda")
+        outputs = model.generate(input_ids, max_length=num_tokens)
+        model.to("cpu")
 
-    return tokenizer.decode(outputs[0], skip_special_tokens=True)
+        return tokenizer.decode(outputs[0], skip_special_tokens=True)
