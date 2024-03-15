@@ -1,12 +1,13 @@
-import contextlib
+import typing as tg
 
 import gradio as gr
-from modules import scripts, shared, script_callbacks
-from modules.ui_components import FormRow, FormColumn, FormGroup, ToolButton
-import json
-import os
-import random
-from scripts.pe import PromptsExpansion
+import gradio.components.base as gr_base
+from pe_libs.pe import PromptsExpansion
+from pe_libs.super_prompt import super_prompt
+
+from modules import options, script_callbacks, scripts, shared
+from modules.processing import StableDiffusionProcessing
+from modules.ui_components import FormColumn, FormRow
 
 expansion = PromptsExpansion()
 
@@ -15,56 +16,51 @@ class PromptExpansion(scripts.Script):
     def __init__(self) -> None:
         super().__init__()
 
-    def title(self):
+    def title(self) -> str:
         return "Prompt-Expansion 1.0"
 
-    def show(self, is_img2img):
+    def show(self, is_img2img: bool):
         return scripts.AlwaysVisible
 
-    def ui(self, is_img2img):
-        enabled = getattr(shared.opts, "enable_Prompt_Expansion_by_default", True)
+    def ui(self, is_img2img: bool) -> list:
         with gr.Group():
-            with gr.Accordion("Prompt-Expansion", open=enabled):
+            with gr.Accordion("Prompt-Expansion", open=False):
                 with FormRow():
                     with FormColumn(min_width=160):
                         is_enabled = gr.Checkbox(
-                            value=enabled, label="Enable Prompt-Expansion", info="GPT2-based prompt expansion as a dynamic style from Fooocus V2 ")
+                            value=False,
+                            label="Enable Prompt Expansion",
+                            info="Use extra model to expand prompts",
+                        )
+                with FormRow():
+                    model_selection = gr.Radio(
+                        choices=["Fooocus V2", "SuperPrompt v1"],
+                        value="Fooocus V2",
+                        label="Model use for prompt expansion",
+                    )
 
-        return [is_enabled]
+        return [is_enabled, model_selection]
 
-    def process(self, p, is_enabled):
+    def process(self, p: StableDiffusionProcessing, *args) -> None:
+        is_enabled: bool = args[0]
         if not is_enabled:
             return
 
+        model_selection: str = args[1]
 
-        # batchCount = len(p.all_prompts)
-        # # p.all_seeds
-        # if(batchCount == 1):
-            # for each image in batch
         for i, prompt in enumerate(p.all_prompts):
-            positivePrompt = expansion(prompt, p.all_seeds[i])
+            positivePrompt = (
+                expansion(prompt, p.all_seeds[i])
+                if model_selection == "Fooocus V2"
+                else f"{prompt}, BREAK, {super_prompt(prompt, p.all_seeds[i])}"
+            )
+
             p.all_prompts[i] = positivePrompt
 
-        # if(batchCount > 1):
-        #     styles = {}
-        #     for i, prompt in enumerate(p.all_prompts):
-        #         if(randomize):
-        #             styles[i] = random.choice(self.styleNames)
-        #         else:
-        #             styles[i] = style
-        #         if(allstyles):
-        #             styles[i] = self.styleNames[i % len(self.styleNames)]
-        #     # for each image in batch
-        #     for i, prompt in enumerate(p.all_prompts):
-        #         positivePrompt = createPositive(
-        #             styles[i] if randomizeEach or allstyles else styles[0], prompt)
-        #         p.all_prompts[i] = positivePrompt
-
-
         p.extra_generation_params["Prompt-Expansion"] = True
+        p.extra_generation_params["Prompt-Expansion-Model"] = model_selection
 
-
-    def after_component(self, component, **kwargs):
+    def after_component(self, component: gr_base.Component, **kwargs) -> None:
         # https://github.com/AUTOMATIC1111/stable-diffusion-webui/pull/7456#issuecomment-1414465888 helpfull link
         # Find the text2img textbox component
         if kwargs.get("elem_id") == "txt2img_prompt":  # postive prompt textbox
@@ -77,13 +73,21 @@ class PromptExpansion(scripts.Script):
 def on_ui_settings():
     section = ("Prompt_Expansion", "Prompt-Expansion")
 
-    shared.opts.add_option(
-        "enable_Prompt_Expansion_by_default",
+    opts = tg.cast(options.Options, shared.opts)
+    opts.add_option(
+        "SuperPrompt_V1_Max_Tokens",
         shared.OptionInfo(
-            True,
-            "enable Prompt-Expansion by default",
-            gr.Checkbox,
-            section=section
-            )
+            default=150,
+            label="Max token length for SuperPrompt V1",
+            component=gr.Slider,
+            component_args={
+                "minimum": 75,
+                "maximum": 300,
+                "step": 75,
+            },
+            section=section,
+        ),
     )
+
+
 script_callbacks.on_ui_settings(on_ui_settings)
