@@ -87,6 +87,7 @@ def on_ui_settings():
                 "step": 1,
             },
             section=section,
+            onchange=lambda: expansion.__call__.cache_clear(),
         ),
     )
     opts.add_option(
@@ -101,6 +102,7 @@ def on_ui_settings():
                 "step": 75,
             },
             section=section,
+            onchange=lambda: super_prompt.cache_clear(),
         ),
     )
 
