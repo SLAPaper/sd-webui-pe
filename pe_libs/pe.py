@@ -1,9 +1,13 @@
 import functools as ft
 import math
+import typing as tg
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.generation.logits_process import LogitsProcessorList
+
+import modules.options as options
+import modules.shared as shared
 
 from .utils import model_management, model_path, neg_inf, set_seed
 
@@ -51,7 +55,6 @@ class PromptsExpansion:
         )
         self.model.eval()
 
-
     def logits_processor(self, input_ids, scores):
         with torch.inference_mode():
             assert scores.ndim == 2 and scores.shape[0] == 1
@@ -83,6 +86,14 @@ class PromptsExpansion:
             current_token_length = int(tokenized_kwargs.data["input_ids"].shape[1])
             max_token_length = 75 * int(math.ceil(float(current_token_length) / 75.0))
             max_new_tokens = max_token_length - current_token_length
+
+            opts = tg.cast(options.Options, shared.options)
+            if (
+                hasattr(opts, "Fooocus_V2_Max_New_Tokens")
+                and opts.Fooocus_V2_Max_New_Tokens is not None
+                and opts.Fooocus_V2_Max_New_Tokens > 0
+            ):
+                max_new_tokens = opts.Fooocus_V2_Max_New_Tokens
 
             model_management.load(self.model)
             # https://huggingface.co/blog/introducing-csearch

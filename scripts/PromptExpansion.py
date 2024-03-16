@@ -71,9 +71,24 @@ class PromptExpansion(scripts.Script):
 
 
 def on_ui_settings():
-    section = ("Prompt_Expansion", "Prompt-Expansion")
+    section = ("Prompt_Expansion", "Prompt Expansion")
 
     opts = tg.cast(options.Options, shared.opts)
+    opts.add_option(
+        "Fooocus_V2_Max_New_Tokens",
+        shared.OptionInfo(
+            default=0,
+            label="Max new token length for Fooocus V2",
+            infotext="Set to 0 to fill up remaining tokens of 75*k",
+            component=gr.Slider,
+            component_args={
+                "minimum": 0,
+                "maximum": 300,
+                "step": 1,
+            },
+            section=section,
+        ),
+    )
     opts.add_option(
         "SuperPrompt_V1_Max_Tokens",
         shared.OptionInfo(

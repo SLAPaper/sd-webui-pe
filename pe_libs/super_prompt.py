@@ -54,8 +54,14 @@ def super_prompt(text: str, seed: int) -> str:
 
     set_seed(seed)
 
+    num_tokens: int = 150
     opts = tg.cast(options.Options, shared.options)
-    num_tokens = getattr(opts, "SuperPrompt_V1_Max_Tokens", 150)
+    if (
+        hasattr(opts, "SuperPrompt_V1_Max_Tokens")
+        and opts.SuperPrompt_V1_Max_Tokens is not None
+        and opts.SuperPrompt_V1_Max_Tokens > 0
+    ):
+        num_tokens = opts.SuperPrompt_V1_Max_Tokens
 
     with torch.inference_mode():
         input_text = f"Expand the following prompt to add more detail: {text}"
