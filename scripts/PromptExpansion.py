@@ -17,14 +17,14 @@ class PromptExpansion(scripts.Script):
         super().__init__()
 
     def title(self) -> str:
-        return "Prompt-Expansion 1.0"
+        return "Prompt Expansion 1.0"
 
     def show(self, is_img2img: bool):
         return scripts.AlwaysVisible
 
     def ui(self, is_img2img: bool) -> list:
         with gr.Group():
-            with gr.Accordion("Prompt-Expansion", open=False):
+            with gr.Accordion("Prompt Expansion", open=False):
                 with FormRow():
                     with FormColumn(min_width=160):
                         is_enabled = gr.Checkbox(
@@ -38,8 +38,15 @@ class PromptExpansion(scripts.Script):
                         value="Fooocus V2",
                         label="Model use for prompt expansion",
                     )
+                with FormRow():
+                    with FormColumn(min_width=160):
+                        discard_original = gr.Checkbox(
+                            value=False,
+                            label="Discard original prompts in SuperPrompt V1",
+                            info="otherwise will append to original prompts",
+                        )
 
-        return [is_enabled, model_selection]
+        return [is_enabled, model_selection, discard_original]
 
     def process(self, p: StableDiffusionProcessing, *args) -> None:
         is_enabled: bool = args[0]
@@ -47,13 +54,17 @@ class PromptExpansion(scripts.Script):
             return
 
         model_selection: str = args[1]
+        discard_original: bool = args[2]
 
         for i, prompt in enumerate(p.all_prompts):
-            positivePrompt = (
-                expansion(prompt, p.all_seeds[i])
-                if model_selection == "Fooocus V2"
-                else f"{prompt}, BREAK, {super_prompt(prompt, p.all_seeds[i])}"
-            )
+            if model_selection == "Fooocus V2":
+                positivePrompt = expansion(prompt, p.all_seeds[i])
+            else:
+                sp = super_prompt(prompt, p.all_seeds[i])
+                if discard_original:
+                    positivePrompt = sp
+                else:
+                    positivePrompt = f"{prompt}, BREAK, {sp}"
 
             p.all_prompts[i] = positivePrompt
 
