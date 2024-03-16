@@ -50,7 +50,10 @@ class ModelManagement:
 
         except:
             # a1111
-            pass
+            from modules import devices
+            
+            self.offload_device = devices.cpu
+            self.load_device = devices.get_optimal_device()
 
         logging.info(f"Prompt Expansion engine setting up for {self.load_device}.")
 
