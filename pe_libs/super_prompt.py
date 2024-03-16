@@ -26,7 +26,7 @@ from transformers import T5ForConditionalGeneration, T5Tokenizer
 import modules.options as options
 import modules.shared as shared
 
-from .utils import model_path, set_seed
+from .utils import model_management, model_path, set_seed
 
 superprompt_path: pathlib.Path = model_path / "superprompt-v1"
 
@@ -59,10 +59,12 @@ def super_prompt(text: str, seed: int) -> str:
 
     with torch.inference_mode():
         input_text = f"Expand the following prompt to add more detail: {text}"
-        input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to("cuda")
+        input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to(
+            model_management.load_device
+        )
 
-        model.to("cuda")
+        model_management.load(model)
         outputs = model.generate(input_ids, max_length=num_tokens)
-        model.to("cpu")
+        model_management.offload(model)
 
         return tokenizer.decode(outputs[0], skip_special_tokens=True)
