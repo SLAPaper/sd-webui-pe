@@ -4,6 +4,7 @@ import gradio as gr
 import gradio.components.base as gr_base
 from pe_libs.pe import PromptsExpansion
 from pe_libs.super_prompt import super_prompt
+from pe_libs.dtg_beta import dtg_beta
 
 from modules import options, script_callbacks, scripts, shared
 from modules.processing import StableDiffusionProcessing
@@ -34,7 +35,7 @@ class PromptExpansion(scripts.Script):
                         )
                 with FormRow():
                     model_selection = gr.Radio(
-                        choices=["Fooocus V2", "SuperPrompt v1"],
+                        choices=["Fooocus V2", "SuperPrompt v1", "DanTagGen-beta"],
                         value="Fooocus V2",
                         label="Model use for prompt expansion",
                     )
@@ -59,12 +60,16 @@ class PromptExpansion(scripts.Script):
         for i, prompt in enumerate(p.all_prompts):
             if model_selection == "Fooocus V2":
                 positivePrompt = expansion(prompt, p.all_seeds[i])
-            else:
+            elif model_selection == "SuperPrompt v1":
                 sp = super_prompt(prompt, p.all_seeds[i])
                 if discard_original:
                     positivePrompt = sp
                 else:
                     positivePrompt = f"{prompt}, BREAK, {sp}"
+            elif model_selection == "DanTagGen-beta":
+                positivePrompt = f"{prompt}, {dtg_beta(prompt, p.all_seeds[i])}"
+            else:
+                raise NotImplementedError(f"Model {model_selection} not implemented")
 
             p.all_prompts[i] = positivePrompt
 
@@ -114,6 +119,22 @@ def on_ui_settings():
             },
             section=section,
             onchange=lambda: super_prompt.cache_clear(),
+        ),
+    )
+    opts.add_option(
+        "DanTagGen_beta_Max_New_Tokens",
+        shared.OptionInfo(
+            default=0,
+            label="Max token length for DanTagGen-beta",
+            infotext="Set to 0 to fill up remaining tokens of 75*k",
+            component=gr.Slider,
+            component_args={
+                "minimum": 0,
+                "maximum": 300,
+                "step": 1,
+            },
+            section=section,
+            onchange=lambda: dtg_beta.cache_clear(),
         ),
     )
 

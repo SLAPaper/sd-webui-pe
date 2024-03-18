@@ -31,3 +31,14 @@ https://github.com/lllyasviel/Fooocus/discussions/117#raw
 
 - Fooocus V2: 只会在原提示词的结尾添加一些画质相关的提示词，不会对原提示词进行修改，因此会忠于原提示词的画面风格
 - SuperPrompt V1: 会对原提示词进行大幅重写，可能会得到非常不同的画面效果
+
+
+## 2024/03/19 更新
+
+新增 DanTagGen-beta [https://huggingface.co/KBlueLeaf/DanTagGen-beta](https://huggingface.co/KBlueLeaf/DanTagGen-beta)
+
+由于huggingface_hub/transformers的下载功能不稳定，需要手动clone到插件目录下的 `models/DanTagGen-beta`
+
+可以通过启动参数 `--pe-model-path` 来指定模型目录
+
+本模型适用于 Kohaku-XL 等使用 danbooru 标签的模型
