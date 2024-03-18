@@ -3,7 +3,7 @@ import math
 import typing as tg
 
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, GPT2TokenizerFast
 from transformers.generation.logits_process import LogitsProcessorList
 
 import modules.options as options
@@ -29,7 +29,7 @@ def remove_pattern(x, pattern):
 
 class PromptsExpansion:
     def __init__(self):
-        self.tokenizer = AutoTokenizer.from_pretrained(
+        self.tokenizer = GPT2TokenizerFast.from_pretrained(
             expansion_path, local_files_only=True
         )
 

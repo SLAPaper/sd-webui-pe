@@ -21,7 +21,7 @@ import pathlib
 import typing as tg
 
 import torch
-from transformers import AutoTokenizer, LlamaForCausalLM
+from transformers import LlamaTokenizer, LlamaForCausalLM
 
 import modules.options as options
 import modules.shared as shared
@@ -38,7 +38,7 @@ if not enable_dtgbeta:
         "Please clone https://huggingface.co/KBlueLeaf/DanTagGen-beta into {dtgbeta_path}"
     )
 
-tokenizer: AutoTokenizer = AutoTokenizer.from_pretrained(
+tokenizer: LlamaTokenizer = LlamaTokenizer.from_pretrained(
     dtgbeta_path, local_files_only=True
 )
 model: LlamaForCausalLM = LlamaForCausalLM.from_pretrained(
@@ -47,19 +47,28 @@ model: LlamaForCausalLM = LlamaForCausalLM.from_pretrained(
 
 
 @ft.lru_cache(maxsize=1024)
-def dtg_beta(text: str, seed: int) -> str:
+def dtg_beta(
+    text: str,
+    seed: int,
+    rating: str = "<|empty|>",
+    artist: str = "<|empty|>",
+    characters: str = "<|empty|>",
+    copyrights: str = "<|empty|>",
+    aspect_ratio: float = 0.0,
+    target: str = "<|long|>",
+) -> str:
     """DanTagGen-beta from https://huggingface.co/KBlueLeaf/DanTagGen-beta"""
     if not enable_dtgbeta:
         return ""
 
     set_seed(seed)
 
-    input_text = f"""rating: <|empty|>
-artist: <|empty|>
-characters: <|empty|>
-copyrights: <|empty|>
-aspect ratio: <|empty|>
-target: <|long|>
+    input_text = f"""rating: {rating}
+artist: {artist}
+characters: {characters}
+copyrights: {copyrights}
+aspect ratio: {f"{aspect_ratio:.1f}" or '<|empty|>'}
+target: {target}
 general: {text}<|input_end|>"""
 
     with torch.inference_mode():

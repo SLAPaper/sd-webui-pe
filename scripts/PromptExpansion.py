@@ -46,8 +46,46 @@ class PromptExpansion(scripts.Script):
                             label="Discard original prompts in SuperPrompt V1",
                             info="otherwise will append to original prompts",
                         )
+                with FormRow():
+                    with gr.Accordion("Advanced", open=False):
+                        dtg_rating = gr.Radio(
+                            [
+                                "<|empty|>",
+                                "safe",
+                                "sensitive",
+                                "nsfw",
+                                "nsfw, explicit",
+                            ],
+                            value="<|empty|>",
+                            label="DanTagGen beta Rating",
+                        )
+                        dtg_artist = gr.Textbox(
+                            value="", label="DanTagGen beta Artist", placeholder=""
+                        )
+                        dtg_chara = gr.Textbox(
+                            value="", label="DanTagGen beta Characters", placeholder=""
+                        )
+                        dtg_copy = gr.Textbox(
+                            value="",
+                            label="DanTagGen beta Copyrights(Series)",
+                            placeholder="",
+                        )
+                        dtg_target = gr.Radio(
+                            ["very_short", "short", "long", "very_long"],
+                            value="long",
+                            label="DanTagGen beta Target length",
+                        )
 
-        return [is_enabled, model_selection, discard_original]
+        return [
+            is_enabled,
+            model_selection,
+            discard_original,
+            dtg_rating,
+            dtg_artist,
+            dtg_chara,
+            dtg_copy,
+            dtg_target,
+        ]
 
     def process(self, p: StableDiffusionProcessing, *args) -> None:
         is_enabled: bool = args[0]
@@ -56,6 +94,11 @@ class PromptExpansion(scripts.Script):
 
         model_selection: str = args[1]
         discard_original: bool = args[2]
+        dtg_rating: str = args[3]
+        dtg_artist: str = args[4]
+        dtg_chara: str = args[5]
+        dtg_copy: str = args[6]
+        dtg_target: str = args[7]
 
         for i, prompt in enumerate(p.all_prompts):
             if model_selection == "Fooocus V2":
@@ -67,7 +110,17 @@ class PromptExpansion(scripts.Script):
                 else:
                     positivePrompt = f"{prompt}, BREAK, {sp}"
             elif model_selection == "DanTagGen-beta":
-                positivePrompt = f"{prompt}, {dtg_beta(prompt, p.all_seeds[i])}"
+                dtg = dtg_beta(
+                    prompt,
+                    p.all_seeds[i],
+                    rating=dtg_rating if dtg_rating else "<|empty|>",
+                    artist=dtg_artist if dtg_artist else "<|empty|>",
+                    characters=dtg_chara if dtg_chara else "<|empty|>",
+                    copyrights=dtg_copy if dtg_copy else "<|empty|>",
+                    aspect_ratio=p.width / p.height,
+                    target=dtg_target if dtg_target else "long",
+                )
+                positivePrompt = f"{prompt}, {dtg}"
             else:
                 raise NotImplementedError(f"Model {model_selection} not implemented")
 
