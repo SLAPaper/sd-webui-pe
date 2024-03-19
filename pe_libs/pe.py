@@ -1,13 +1,8 @@
 import functools as ft
-import math
-import typing as tg
 
 import torch
 from transformers import AutoModelForCausalLM, GPT2TokenizerFast
 from transformers.generation.logits_process import LogitsProcessorList
-
-import modules.options as options
-import modules.shared as shared
 
 from .utils import model_management, model_path, neg_inf, set_seed
 
@@ -67,7 +62,7 @@ class PromptsExpansion:
             return scores + bias
 
     @ft.lru_cache(maxsize=1024)
-    def __call__(self, prompt: str, seed: int) -> str:
+    def __call__(self, prompt: str, seed: int, max_new_tokens) -> str:
         if prompt == "":
             return ""
 
@@ -83,17 +78,10 @@ class PromptsExpansion:
                 "attention_mask"
             ].to(model_management.load_device)
 
-            current_token_length = int(tokenized_kwargs.data["input_ids"].shape[1])
-            max_token_length = 75 * int(math.ceil(float(current_token_length) / 75.0))
-            max_new_tokens = max_token_length - current_token_length
-
-            opts = tg.cast(options.Options, shared.options)
-            if (
-                hasattr(opts, "Fooocus_V2_Max_New_Tokens")
-                and opts.Fooocus_V2_Max_New_Tokens is not None
-                and opts.Fooocus_V2_Max_New_Tokens > 0
-            ):
-                max_new_tokens = opts.Fooocus_V2_Max_New_Tokens
+            if max_new_tokens <= 0:  # 填充到75*k
+                current_token_length = int(tokenized_kwargs.data["input_ids"].shape[1])
+                max_token_length = current_token_length + 75 - current_token_length % 75
+                max_new_tokens = max_token_length - current_token_length
 
             model_management.load(self.model)
             # https://huggingface.co/blog/introducing-csearch

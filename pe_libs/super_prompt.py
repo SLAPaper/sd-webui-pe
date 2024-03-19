@@ -18,13 +18,9 @@
 import functools as ft
 import logging
 import pathlib
-import typing as tg
 
 import torch
 from transformers import T5ForConditionalGeneration, T5Tokenizer
-
-import modules.options as options
-import modules.shared as shared
 
 from .utils import model_management, model_path, set_seed
 
@@ -47,30 +43,35 @@ model: T5ForConditionalGeneration = T5ForConditionalGeneration.from_pretrained(
 
 
 @ft.lru_cache(maxsize=1024)
-def super_prompt(text: str, seed: int) -> str:
+def super_prompt(text: str, seed: int, max_new_tokens: int, prompt: str) -> str:
     """SuperPrompt v1 from https://huggingface.co/roborovski/superprompt-v1"""
     if not enable_superprompt:
         return ""
 
     set_seed(seed)
 
-    num_tokens: int = 150
-    opts = tg.cast(options.Options, shared.options)
-    if (
-        hasattr(opts, "SuperPrompt_V1_Max_Tokens")
-        and opts.SuperPrompt_V1_Max_Tokens is not None
-        and opts.SuperPrompt_V1_Max_Tokens > 0
-    ):
-        num_tokens = opts.SuperPrompt_V1_Max_Tokens
+    if max_new_tokens <= 0:
+        max_new_tokens = 150
 
     with torch.inference_mode():
-        input_text = f"Expand the following prompt to add more detail: {text}"
+        if prompt:
+            input_text = f"{prompt} {text}"
+        else:
+            input_text = f"Expand the following prompt to add more detail: {text}"
+
         input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to(
             model_management.load_device
         )
 
         model_management.load(model)
-        outputs = model.generate(input_ids, max_length=num_tokens)
+        outputs = model.generate(
+            input_ids,
+            max_length=max_new_tokens,
+            do_sample=True,
+            temperature=0.7,
+            top_k=50,
+            top_p=0.95,
+        )
         model_management.offload(model)
 
         return tokenizer.decode(outputs[0], skip_special_tokens=True)

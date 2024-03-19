@@ -18,13 +18,9 @@
 import functools as ft
 import logging
 import pathlib
-import typing as tg
 
 import torch
 from transformers import LlamaTokenizer, LlamaForCausalLM
-
-import modules.options as options
-import modules.shared as shared
 
 from .utils import model_management, model_path, set_seed
 
@@ -46,10 +42,33 @@ model: LlamaForCausalLM = LlamaForCausalLM.from_pretrained(
 )
 
 
+def fill_template(
+    text: str,
+    rating: str,
+    artist: str,
+    characters: str,
+    copyrights: str,
+    aspect_ratio: float,
+    target: str,
+) -> str:
+    """DanTagGen-beta prompt format"""
+    return f"""
+rating: {rating}
+artist: {artist}
+characters: {characters}
+copyrights: {copyrights}
+aspect ratio: {f"{aspect_ratio:.1f}" or '<|empty|>'}
+target: {target}
+general: {text}<|input_end|>
+""".strip()
+
+
 @ft.lru_cache(maxsize=1024)
 def dtg_beta(
     text: str,
     seed: int,
+    max_new_tokens: int,
+    *,
     rating: str = "<|empty|>",
     artist: str = "<|empty|>",
     characters: str = "<|empty|>",
@@ -63,39 +82,52 @@ def dtg_beta(
 
     set_seed(seed)
 
-    input_text = f"""rating: {rating}
-artist: {artist}
-characters: {characters}
-copyrights: {copyrights}
-aspect ratio: {f"{aspect_ratio:.1f}" or '<|empty|>'}
-target: {target}
-general: {text}<|input_end|>"""
+    input_text = fill_template(
+        text, rating, artist, characters, copyrights, aspect_ratio, target
+    )
 
     with torch.inference_mode():
         input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to(
             model_management.load_device
         )
-        current_token_length = int(input_ids.shape[1])
-        max_token_length = current_token_length + 75 - current_token_length % 75
-        max_new_tokens = max_token_length - current_token_length
-        opts = tg.cast(options.Options, shared.options)
-        if (
-            hasattr(opts, "DanTagGen_beta_Max_New_Tokens")
-            and opts.DanTagGen_beta_Max_New_Tokens is not None
-            and opts.DanTagGen_beta_Max_New_Tokens > 0
-        ):
-            max_new_tokens = opts.DanTagGen_beta_Max_New_Tokens
+        if max_new_tokens <= 0:  # 填充到75*k
+            current_token_length = int(input_ids.shape[1])
+            max_token_length = current_token_length + 75 - current_token_length % 75
+            max_new_tokens = max_token_length - current_token_length
 
+        res_list: list[str] = []
         model_management.load(model)
-        outputs = model.generate(
-            input_ids,
-            max_new_tokens=max_new_tokens,
-            temperature=1.35,
-            top_p=0.95,
-            top_k=100,
-        )
-        model_management.offload(model)
+        max_retry = 5
+        while max_retry > 0:
+            outputs = model.generate(
+                input_ids,
+                max_new_tokens=max_new_tokens,
+                temperature=1.35,
+                top_p=0.95,
+                top_k=100,
+                repetition_penalty=1.17,
+                do_sample=True,
+            )
+            output_ids = outputs[0][current_token_length:]
+            res = tokenizer.decode(output_ids, skip_special_tokens=True)
 
-        return tokenizer.decode(
-            outputs[0][current_token_length:], skip_special_tokens=True
-        )
+            output_token_length = len(output_ids)
+            if output_token_length == 0:  # 输出为空，尝试重新生成
+                max_retry -= 1
+                continue
+            elif output_token_length > max_new_tokens:  # 输出长度超过预定长度，放弃
+                break
+
+            # 成功产出，将输出添加到输入中，并重新计算输出长度
+            res_list.append(res)
+            new_text = f"{input_text}, {res}"
+            input_text = fill_template(
+                new_text, rating, artist, characters, copyrights, aspect_ratio, target
+            )
+            input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to(
+                model_management.load_device
+            )
+            max_new_tokens -= output_token_length
+
+        model_management.offload(model)
+        return ", ".join(res_list)

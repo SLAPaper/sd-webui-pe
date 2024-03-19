@@ -47,7 +47,16 @@ class PromptExpansion(scripts.Script):
                             info="otherwise will append to original prompts",
                         )
                 with FormRow():
-                    with gr.Accordion("Advanced", open=False):
+                    with gr.Accordion("Advanced Options", open=False):
+                        sp_prompt = gr.Textbox(
+                            value="",
+                            label="SuperPrompt v1 Custom Prompt",
+                            placeholder=(
+                                "Custom Prompt for SuperPrompt v1, "
+                                "original prompt is appended followed, "
+                                "leave empty to use default"
+                            ),
+                        )
                         dtg_rating = gr.Radio(
                             [
                                 "<|empty|>",
@@ -57,29 +66,49 @@ class PromptExpansion(scripts.Script):
                                 "nsfw, explicit",
                             ],
                             value="<|empty|>",
-                            label="DanTagGen beta Rating",
+                            label=(
+                                "DanTagGen beta Rating, "
+                                "use <|empty|> for no rating tendency"
+                            ),
                         )
                         dtg_artist = gr.Textbox(
-                            value="", label="DanTagGen beta Artist", placeholder=""
+                            value="",
+                            label="DanTagGen beta Artist",
+                            placeholder=(
+                                "Artist tag for DanTagGen beta, "
+                                "leave empty to use <|empty|>"
+                            ),
                         )
                         dtg_chara = gr.Textbox(
-                            value="", label="DanTagGen beta Characters", placeholder=""
+                            value="",
+                            label="DanTagGen beta Characters",
+                            placeholder=(
+                                "Characters tag for DanTagGen beta, "
+                                "leave empty to use <|empty|>"
+                            ),
                         )
                         dtg_copy = gr.Textbox(
                             value="",
                             label="DanTagGen beta Copyrights(Series)",
-                            placeholder="",
+                            placeholder=(
+                                "Copyrights(Series) tag for DanTagGen beta, "
+                                "leave empty to use <|empty|>"
+                            ),
                         )
                         dtg_target = gr.Radio(
                             ["very_short", "short", "long", "very_long"],
                             value="long",
-                            label="DanTagGen beta Target length",
+                            label=(
+                                "DanTagGen beta Target length, "
+                                "short or long is recommended"
+                            ),
                         )
 
         return [
             is_enabled,
             model_selection,
             discard_original,
+            sp_prompt,
             dtg_rating,
             dtg_artist,
             dtg_chara,
@@ -94,17 +123,44 @@ class PromptExpansion(scripts.Script):
 
         model_selection: str = args[1]
         discard_original: bool = args[2]
-        dtg_rating: str = args[3]
-        dtg_artist: str = args[4]
-        dtg_chara: str = args[5]
-        dtg_copy: str = args[6]
-        dtg_target: str = args[7]
+        sp_prompt: str = args[3]
+        dtg_rating: str = args[4]
+        dtg_artist: str = args[5]
+        dtg_chara: str = args[6]
+        dtg_copy: str = args[7]
+        dtg_target: str = args[8]
+
+        opts = tg.cast(options.Options, shared.options)
+        max_new_tokens = 0
+        if model_selection == "Fooocus V2":
+            if (
+                hasattr(opts, "Fooocus_V2_Max_New_Tokens")
+                and opts.Fooocus_V2_Max_New_Tokens is not None
+                and opts.Fooocus_V2_Max_New_Tokens > 0
+            ):
+                max_new_tokens = opts.Fooocus_V2_Max_New_Tokens
+        elif model_selection == "SuperPrompt v1":
+            if (
+                hasattr(opts, "SuperPrompt_V1_Max_Tokens")
+                and opts.SuperPrompt_V1_Max_Tokens is not None
+                and opts.SuperPrompt_V1_Max_Tokens > 0
+            ):
+                max_new_tokens = opts.SuperPrompt_V1_Max_Tokens
+        elif model_selection == "DanTagGen-beta":
+            if (
+                hasattr(opts, "DanTagGen_beta_Max_New_Tokens")
+                and opts.DanTagGen_beta_Max_New_Tokens is not None
+                and opts.DanTagGen_beta_Max_New_Tokens > 0
+            ):
+                max_new_tokens = opts.DanTagGen_beta_Max_New_Tokens
+        else:
+            raise NotImplementedError(f"Model {model_selection} not implemented")
 
         for i, prompt in enumerate(p.all_prompts):
             if model_selection == "Fooocus V2":
-                positivePrompt = expansion(prompt, p.all_seeds[i])
+                positivePrompt = expansion(prompt, p.all_seeds[i], max_new_tokens)
             elif model_selection == "SuperPrompt v1":
-                sp = super_prompt(prompt, p.all_seeds[i])
+                sp = super_prompt(prompt, p.all_seeds[i], max_new_tokens, sp_prompt)
                 if discard_original:
                     positivePrompt = sp
                 else:
@@ -113,6 +169,7 @@ class PromptExpansion(scripts.Script):
                 dtg = dtg_beta(
                     prompt,
                     p.all_seeds[i],
+                    max_new_tokens,
                     rating=dtg_rating if dtg_rating else "<|empty|>",
                     artist=dtg_artist if dtg_artist else "<|empty|>",
                     characters=dtg_chara if dtg_chara else "<|empty|>",
@@ -147,8 +204,7 @@ def on_ui_settings():
         "Fooocus_V2_Max_New_Tokens",
         shared.OptionInfo(
             default=0,
-            label="Max new token length for Fooocus V2",
-            infotext="Set to 0 to fill up remaining tokens of 75*k",
+            label="Max new token length for Fooocus V2 (Set to 0 to fill up remaining tokens of 75*k)",
             component=gr.Slider,
             component_args={
                 "minimum": 0,
@@ -156,7 +212,6 @@ def on_ui_settings():
                 "step": 1,
             },
             section=section,
-            onchange=lambda: expansion.__call__.cache_clear(),
         ),
     )
     opts.add_option(
@@ -167,19 +222,17 @@ def on_ui_settings():
             component=gr.Slider,
             component_args={
                 "minimum": 75,
-                "maximum": 300,
+                "maximum": 375,
                 "step": 75,
             },
             section=section,
-            onchange=lambda: super_prompt.cache_clear(),
         ),
     )
     opts.add_option(
         "DanTagGen_beta_Max_New_Tokens",
         shared.OptionInfo(
             default=0,
-            label="Max token length for DanTagGen-beta",
-            infotext="Set to 0 to fill up remaining tokens of 75*k",
+            label="Max new token length for DanTagGen-beta (Set to 0 to fill up remaining tokens of 75*k)",
             component=gr.Slider,
             component_args={
                 "minimum": 0,
@@ -187,7 +240,6 @@ def on_ui_settings():
                 "step": 1,
             },
             section=section,
-            onchange=lambda: dtg_beta.cache_clear(),
         ),
     )
 
