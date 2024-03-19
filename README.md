@@ -47,5 +47,5 @@ https://github.com/lllyasviel/Fooocus/discussions/117#raw
 ## 2024/03/20 更新
 
 - 修复了 SuperPrompt V1 输出不受种子值影响的问题
-- 实现了 DanTagGen-beta 的渐进生成机制，扩展的提示词会更丰富，尝试次数可以在设置菜单中配置
-- 在Advanced Option中提供了自定义 SuperPrompt V1 使用的提示词的配置
+- 实现了 DanTagGen-beta 的渐进生成机制，扩展的提示词会更丰富
+- 在 `Advanced Option` 中提供了自定义 SuperPrompt V1 使用的提示词的配置
