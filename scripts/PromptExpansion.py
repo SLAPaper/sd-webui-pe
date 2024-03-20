@@ -130,31 +130,33 @@ class PromptExpansion(scripts.Script):
         dtg_copy: str = args[7]
         dtg_target: str = args[8]
 
-        opts = tg.cast(options.Options, shared.options)
+        opts = tg.cast(options.Options, shared.opts)
         max_new_tokens = 0
         if model_selection == "Fooocus V2":
             if (
-                hasattr(opts, "Fooocus_V2_Max_New_Tokens")
-                and opts.Fooocus_V2_Max_New_Tokens is not None
-                and opts.Fooocus_V2_Max_New_Tokens > 0
+                "Fooocus_V2_Max_New_Tokens" in opts.data
+                and opts.data["Fooocus_V2_Max_New_Tokens"] is not None
+                and opts.data["Fooocus_V2_Max_New_Tokens"] > 0
             ):
-                max_new_tokens = opts.Fooocus_V2_Max_New_Tokens
+                max_new_tokens = opts.data["Fooocus_V2_Max_New_Tokens"]
         elif model_selection == "SuperPrompt v1":
             if (
-                hasattr(opts, "SuperPrompt_V1_Max_Tokens")
-                and opts.SuperPrompt_V1_Max_Tokens is not None
-                and opts.SuperPrompt_V1_Max_Tokens > 0
+                "SuperPrompt_V1_Max_Tokens" in opts.data
+                and opts.data["SuperPrompt_V1_Max_Tokens"] is not None
+                and opts.data["SuperPrompt_V1_Max_Tokens"] > 0
             ):
-                max_new_tokens = opts.SuperPrompt_V1_Max_Tokens
+                max_new_tokens = opts.data["SuperPrompt_V1_Max_Tokens"]
         elif model_selection == "DanTagGen-beta":
             if (
-                hasattr(opts, "DanTagGen_beta_Max_New_Tokens")
-                and opts.DanTagGen_beta_Max_New_Tokens is not None
-                and opts.DanTagGen_beta_Max_New_Tokens > 0
+                "DanTagGen_beta_Max_New_Tokens" in opts.data
+                and opts.data["DanTagGen_beta_Max_New_Tokens"] is not None
+                and opts.data["DanTagGen_beta_Max_New_Tokens"] > 0
             ):
-                max_new_tokens = opts.DanTagGen_beta_Max_New_Tokens
+                max_new_tokens = opts.data["DanTagGen_beta_Max_New_Tokens"]
         else:
             raise NotImplementedError(f"Model {model_selection} not implemented")
+
+        # print(f"DEBUG: {model_selection=}, {max_new_tokens=}")
 
         for i, prompt in enumerate(p.all_prompts):
             if model_selection == "Fooocus V2":

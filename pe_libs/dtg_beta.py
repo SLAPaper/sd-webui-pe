@@ -90,8 +90,10 @@ def dtg_beta(
         input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to(
             model_management.load_device
         )
+        current_token_length = int(
+            tokenizer(text, return_tensors="pt").input_ids.shape[1]
+        )
         if max_new_tokens <= 0:  # 填充到75*k
-            current_token_length = int(input_ids.shape[1])
             max_token_length = current_token_length + 75 - current_token_length % 75
             max_new_tokens = max_token_length - current_token_length
 
@@ -108,10 +110,13 @@ def dtg_beta(
                 repetition_penalty=1.17,
                 do_sample=True,
             )
-            output_ids = outputs[0][current_token_length:]
+            output_ids = outputs[0][input_ids.shape[1] :]
             res = tokenizer.decode(output_ids, skip_special_tokens=True)
 
             output_token_length = len(output_ids)
+
+            # print(f"DEBUG: {max_new_tokens=}, {output_token_length=}, {res=}")
+
             if output_token_length == 0:  # 输出为空，尝试重新生成
                 max_retry -= 1
                 continue
@@ -120,12 +125,15 @@ def dtg_beta(
 
             # 成功产出，将输出添加到输入中，并重新计算输出长度
             res_list.append(res)
-            new_text = f"{input_text}, {res}"
+            new_text = f"{text}, {res}"
             input_text = fill_template(
                 new_text, rating, artist, characters, copyrights, aspect_ratio, target
             )
             input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to(
                 model_management.load_device
+            )
+            current_token_length = int(
+                tokenizer(input_text, return_tensors="pt").input_ids.shape[1]
             )
             max_new_tokens -= output_token_length
 
