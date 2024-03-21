@@ -103,6 +103,13 @@ class PromptExpansion(scripts.Script):
                                 "short or long is recommended"
                             ),
                         )
+                        dtg_banned = gr.Textbox(
+                            value="",
+                            label="DanTagGen beta banned tags",
+                            placeholder=(
+                                "Banned tags for DanTagGen beta, seperated by comma"
+                            ),
+                        )
 
         return [
             is_enabled,
@@ -114,6 +121,7 @@ class PromptExpansion(scripts.Script):
             dtg_chara,
             dtg_copy,
             dtg_target,
+            dtg_banned,
         ]
 
     def process(self, p: StableDiffusionProcessing, *args) -> None:
@@ -129,6 +137,7 @@ class PromptExpansion(scripts.Script):
         dtg_chara: str = args[6]
         dtg_copy: str = args[7]
         dtg_target: str = args[8]
+        dtg_banned: str = args[9]
 
         opts = tg.cast(options.Options, shared.opts)
         max_new_tokens = 0
@@ -178,6 +187,7 @@ class PromptExpansion(scripts.Script):
                     copyrights=dtg_copy if dtg_copy else "<|empty|>",
                     aspect_ratio=p.width / p.height,
                     target=dtg_target if dtg_target else "long",
+                    banned_tags=dtg_banned,
                 )
                 positivePrompt = f"{prompt}, {dtg}"
             else:

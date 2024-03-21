@@ -63,6 +63,22 @@ general: {text}<|input_end|>
 """.strip()
 
 
+def filter_out_tags(text: str, banned_tags: list[str]) -> str:
+    """DanTagGen-beta filter out tags"""
+    if not banned_tags:
+        return text
+
+    lowered_banned = [x.lower() for x in banned_tags]
+    original_tags = [(x.strip(), x.strip().lower()) for x in text.split(",")]
+
+    new_tags = []
+    for ori_tag, ori_tag_lower in original_tags:
+        if not any(banned_tag in ori_tag_lower for banned_tag in lowered_banned):
+            new_tags.append(ori_tag)
+
+    return ", ".join(new_tags)
+
+
 @ft.lru_cache(maxsize=1024)
 def dtg_beta(
     text: str,
@@ -75,12 +91,17 @@ def dtg_beta(
     copyrights: str = "<|empty|>",
     aspect_ratio: float = 0.0,
     target: str = "<|long|>",
+    banned_tags: str = "",
 ) -> str:
     """DanTagGen-beta from https://huggingface.co/KBlueLeaf/DanTagGen-beta"""
     if not enable_dtgbeta:
         return ""
 
     set_seed(seed)
+
+    banned = []
+    if banned_tags:
+        banned = [x.strip() for x in banned_tags.split(",")]
 
     input_text = fill_template(
         text, rating, artist, characters, copyrights, aspect_ratio, target
@@ -111,7 +132,9 @@ def dtg_beta(
                 do_sample=True,
             )
             output_ids = outputs[0][input_ids.shape[1] :]
-            res = tokenizer.decode(output_ids, skip_special_tokens=True)
+            res = filter_out_tags(
+                tokenizer.decode(output_ids, skip_special_tokens=True), banned
+            )
 
             output_token_length = len(output_ids)
 
