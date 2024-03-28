@@ -30,8 +30,8 @@ enable_superprompt: bool = superprompt_path.exists()
 
 if not enable_superprompt:
     logging.warning(
-        f"SuperPrompt v1 is not available. "
-        "Please clone https://huggingface.co/roborovski/superprompt-v1 into {superprompt_path}"
+        "SuperPrompt v1 is not available. "
+        f"Please clone https://huggingface.co/roborovski/superprompt-v1 into {superprompt_path}"
     )
 
 tokenizer: T5Tokenizer = T5Tokenizer.from_pretrained(

@@ -30,8 +30,8 @@ enable_dtgbeta: bool = dtgbeta_path.exists()
 
 if not enable_dtgbeta:
     logging.warning(
-        f"DanTagGen-beta is not available. "
-        "Please clone https://huggingface.co/KBlueLeaf/DanTagGen-beta into {dtgbeta_path}"
+        "DanTagGen-beta is not available. "
+        f"Please clone https://huggingface.co/KBlueLeaf/DanTagGen-beta into {dtgbeta_path}"
     )
 
 tokenizer: LlamaTokenizer = LlamaTokenizer.from_pretrained(
