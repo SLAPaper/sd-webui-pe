@@ -1,6 +1,8 @@
 # sd-webui-pe
 
-English version is at the bottom
+Tips: English version is at the bottom
+
+For online using, checkout the [HuggingFace Space](https://huggingface.co/spaces/SLAPaper/roborovski-superprompt-v1)
 
 ## 2023/11/04 更新
 
@@ -48,6 +50,8 @@ https://github.com/lllyasviel/Fooocus/discussions/117#raw
 - 修复了 SuperPrompt V1 输出不受种子值影响的问题
 - 实现了 DanTagGen-beta 的渐进生成机制，扩展的提示词会更丰富
 - 在 `Advanced Option` 中提供了自定义 SuperPrompt V1 使用的提示词的配置
+
+## Below is English Version
 
 ## Update 2023/11/04
 
