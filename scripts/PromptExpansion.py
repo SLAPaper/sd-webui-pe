@@ -2,9 +2,9 @@ import typing as tg
 
 import gradio as gr
 import gradio.components.base as gr_base
+from pe_libs.dtg_beta import dtg_beta
 from pe_libs.pe import PromptsExpansion
 from pe_libs.super_prompt import super_prompt
-from pe_libs.dtg_beta import dtg_beta
 
 from modules import options, script_callbacks, scripts, shared
 from modules.processing import StableDiffusionProcessing
@@ -35,7 +35,11 @@ class PromptExpansion(scripts.Script):
                         )
                 with FormRow():
                     model_selection = gr.Radio(
-                        choices=["Fooocus V2", "SuperPrompt v1", "DanTagGen-beta"],
+                        choices=[
+                            "Fooocus V2",
+                            "SuperPrompt v1",
+                            "DanTagGen-beta",
+                        ],
                         value="Fooocus V2",
                         label="Model use for prompt expansion",
                     )
@@ -140,63 +144,72 @@ class PromptExpansion(scripts.Script):
         dtg_banned: str = args[9]
 
         opts = tg.cast(options.Options, shared.opts)
-        max_new_tokens = 0
-        if model_selection == "Fooocus V2":
-            if (
-                "Fooocus_V2_Max_New_Tokens" in opts.data
-                and opts.data["Fooocus_V2_Max_New_Tokens"] is not None
-                and opts.data["Fooocus_V2_Max_New_Tokens"] > 0
-            ):
-                max_new_tokens = opts.data["Fooocus_V2_Max_New_Tokens"]
-        elif model_selection == "SuperPrompt v1":
-            if (
-                "SuperPrompt_V1_Max_Tokens" in opts.data
-                and opts.data["SuperPrompt_V1_Max_Tokens"] is not None
-                and opts.data["SuperPrompt_V1_Max_Tokens"] > 0
-            ):
-                max_new_tokens = opts.data["SuperPrompt_V1_Max_Tokens"]
-        elif model_selection == "DanTagGen-beta":
-            if (
-                "DanTagGen_beta_Max_New_Tokens" in opts.data
-                and opts.data["DanTagGen_beta_Max_New_Tokens"] is not None
-                and opts.data["DanTagGen_beta_Max_New_Tokens"] > 0
-            ):
-                max_new_tokens = opts.data["DanTagGen_beta_Max_New_Tokens"]
-        else:
-            raise NotImplementedError(f"Model {model_selection} not implemented")
+        max_new_tokens: int = 0
+        match model_selection:
+            case "Fooocus V2":
+                if (
+                    "Fooocus_V2_Max_New_Tokens" in opts.data
+                    and opts.data["Fooocus_V2_Max_New_Tokens"] is not None
+                    and int(str(opts.data["Fooocus_V2_Max_New_Tokens"])) > 0
+                ):
+                    max_new_tokens = int(str(opts.data["Fooocus_V2_Max_New_Tokens"]))
+            case "SuperPrompt v1":
+                if (
+                    "SuperPrompt_V1_Max_Tokens" in opts.data
+                    and opts.data["SuperPrompt_V1_Max_Tokens"] is not None
+                    and int(str(opts.data["SuperPrompt_V1_Max_Tokens"])) > 0
+                ):
+                    max_new_tokens = int(str(opts.data["SuperPrompt_V1_Max_Tokens"]))
+            case "DanTagGen-beta":
+                if (
+                    "DanTagGen_beta_Max_New_Tokens" in opts.data
+                    and opts.data["DanTagGen_beta_Max_New_Tokens"] is not None
+                    and int(str(opts.data["DanTagGen_beta_Max_New_Tokens"])) > 0
+                ):
+                    max_new_tokens = int(
+                        str(opts.data["DanTagGen_beta_Max_New_Tokens"])
+                    )
+            case _:
+                raise NotImplementedError(f"Model {model_selection} not implemented")
 
         # print(f"DEBUG: {model_selection=}, {max_new_tokens=}")
 
         for i, prompt in enumerate(p.all_prompts):
-            if model_selection == "Fooocus V2":
-                positivePrompt = expansion(prompt, p.all_seeds[i], max_new_tokens)
-            elif model_selection == "SuperPrompt v1":
-                sp = super_prompt(prompt, p.all_seeds[i], max_new_tokens, sp_prompt)
-                if discard_original:
-                    positivePrompt = sp
-                else:
-                    positivePrompt = f"{prompt}, BREAK, {sp}"
-            elif model_selection == "DanTagGen-beta":
-                dtg = dtg_beta(
-                    prompt,
-                    p.all_seeds[i],
-                    max_new_tokens,
-                    rating=dtg_rating if dtg_rating else "<|empty|>",
-                    artist=dtg_artist if dtg_artist else "<|empty|>",
-                    characters=dtg_chara if dtg_chara else "<|empty|>",
-                    copyrights=dtg_copy if dtg_copy else "<|empty|>",
-                    aspect_ratio=p.width / p.height,
-                    target=dtg_target if dtg_target else "long",
-                    banned_tags=dtg_banned,
-                )
-                positivePrompt = f"{prompt}, {dtg}"
-            else:
-                raise NotImplementedError(f"Model {model_selection} not implemented")
+            match model_selection:
+                case "Fooocus V2":
+                    positivePrompt = expansion(prompt, p.all_seeds[i], max_new_tokens)
+                case "SuperPrompt v1":
+                    sp = super_prompt(prompt, p.all_seeds[i], max_new_tokens, sp_prompt)
+                    if discard_original:
+                        positivePrompt = sp
+                    else:
+                        positivePrompt = f"{prompt}, BREAK, {sp}"
+                case "DanTagGen-beta":
+                    dtg = dtg_beta(
+                        prompt,
+                        p.all_seeds[i],
+                        max_new_tokens,
+                        rating=dtg_rating if dtg_rating else "<|empty|>",
+                        artist=dtg_artist if dtg_artist else "<|empty|>",
+                        characters=dtg_chara if dtg_chara else "<|empty|>",
+                        copyrights=dtg_copy if dtg_copy else "<|empty|>",
+                        aspect_ratio=p.width / p.height,
+                        target=dtg_target if dtg_target else "long",
+                        banned_tags=dtg_banned,
+                    )
+                    positivePrompt = f"{prompt}, {dtg}"
+                case _:
+                    raise NotImplementedError(
+                        f"Model {model_selection} not implemented"
+                    )
 
             p.all_prompts[i] = positivePrompt
 
         p.extra_generation_params["Prompt-Expansion"] = True
-        p.extra_generation_params["Prompt-Expansion-Model"] = model_selection
+
+        match model_selection:
+            case _:
+                p.extra_generation_params["Prompt-Expansion-Model"] = model_selection
 
     def after_component(self, component: gr_base.Component, **kwargs) -> None:
         # https://github.com/AUTOMATIC1111/stable-diffusion-webui/pull/7456#issuecomment-1414465888 helpfull link

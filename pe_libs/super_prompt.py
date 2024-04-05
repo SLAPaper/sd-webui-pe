@@ -18,6 +18,7 @@
 import functools as ft
 import logging
 import pathlib
+import typing as tg
 
 import torch
 from transformers import T5ForConditionalGeneration, T5Tokenizer
@@ -37,8 +38,9 @@ if not enable_superprompt:
 tokenizer: T5Tokenizer = T5Tokenizer.from_pretrained(
     superprompt_path, local_files_only=True
 )
-model: T5ForConditionalGeneration = T5ForConditionalGeneration.from_pretrained(
-    superprompt_path, local_files_only=True
+model = tg.cast(
+    T5ForConditionalGeneration,
+    T5ForConditionalGeneration.from_pretrained(superprompt_path, local_files_only=True),
 )
 
 

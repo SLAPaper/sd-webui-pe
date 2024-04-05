@@ -43,14 +43,14 @@ class ModelManagement:
     def __init__(self) -> None:
         try:
             # forge
-            from ldm_patched.modules import model_management
+            from ldm_patched.modules import model_management  # type: ignore
 
             self.load_device = model_management.text_encoder_device()
             self.offload_device = model_management.text_encoder_offload_device()
 
         except:
             # a1111
-            from modules import devices
+            from modules import devices  # type: ignore
             
             self.offload_device = devices.cpu
             self.load_device = devices.get_optimal_device()
