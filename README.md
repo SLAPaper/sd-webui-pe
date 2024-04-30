@@ -51,6 +51,10 @@ https://github.com/lllyasviel/Fooocus/discussions/117#raw
 - 实现了 DanTagGen-beta 的渐进生成机制，扩展的提示词会更丰富
 - 在 `Advanced Option` 中提供了自定义 SuperPrompt V1 使用的提示词的配置
 
+## 2024/05/01 更新
+
+- 将 DanTagGen 支持改为 [HF collections](https://huggingface.co/collections/KBlueLeaf/dantaggen-65f82fa9335881a67573556b) 里的任意版本
+
 ## Below is English Version
 
 ## Update 2023/11/04
@@ -99,3 +103,7 @@ This model is suitable for models that use danbooru tags, such as Kohaku-XL.
 - Fixed an issue where SuperPrompt V1 output was not affected by seed values.
 - Implemented a progressive generation mechanism for DanTagGen-beta, resulting in richer expanded prompt words.
 - Added a custom configuration for prompt words used by SuperPrompt V1 in the `Advanced Option`.
+
+## Update 2024/05/01
+
+- Changed DanTagGen support to any version in [HF collections](https://huggingface.co/collections/KBlueLeaf/dantaggen-65f82fa9335881a67573556b)

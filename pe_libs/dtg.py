@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""DanTagGen-beta from https://huggingface.co/KBlueLeaf/DanTagGen-beta"""
+"""DanTagGen from https://huggingface.co/collections/KBlueLeaf/dantaggen-65f82fa9335881a67573556b"""
 
 
 import functools as ft
@@ -24,21 +24,21 @@ from transformers import LlamaTokenizer, LlamaForCausalLM
 
 from .utils import model_management, model_path, set_seed
 
-dtgbeta_path: pathlib.Path = model_path / "DanTagGen-beta"
+dtg_path: pathlib.Path = model_path / "DanTagGen"
 
-enable_dtgbeta: bool = dtgbeta_path.exists()
+enable_dtg: bool = dtg_path.exists()
 
-if not enable_dtgbeta:
+if not enable_dtg:
     logging.warning(
-        "DanTagGen-beta is not available. "
-        f"Please clone https://huggingface.co/KBlueLeaf/DanTagGen-beta into {dtgbeta_path}"
+        "DanTagGen is not available. "
+        f"Please clone any one of https://huggingface.co/collections/KBlueLeaf/dantaggen-65f82fa9335881a67573556b into {dtg_path}"
     )
 
 tokenizer: LlamaTokenizer = LlamaTokenizer.from_pretrained(
-    dtgbeta_path, local_files_only=True
+    dtg_path, local_files_only=True
 )
-model: LlamaForCausalLM = LlamaForCausalLM.from_pretrained(
-    dtgbeta_path, local_files_only=True
+model: LlamaForCausalLM = LlamaForCausalLM.from_pretrained(  # type: ignore
+    dtg_path, local_files_only=True
 )
 
 
@@ -51,7 +51,7 @@ def fill_template(
     aspect_ratio: float,
     target: str,
 ) -> str:
-    """DanTagGen-beta prompt format"""
+    """DanTagGen prompt format"""
     return f"""
 rating: {rating}
 artist: {artist}
@@ -64,7 +64,7 @@ general: {text}<|input_end|>
 
 
 def filter_out_tags(text: str, banned_tags: list[str]) -> str:
-    """DanTagGen-beta filter out tags"""
+    """DanTagGen filter out tags"""
     if not banned_tags:
         return text
 
@@ -80,7 +80,7 @@ def filter_out_tags(text: str, banned_tags: list[str]) -> str:
 
 
 @ft.lru_cache(maxsize=1024)
-def dtg_beta(
+def dtg(
     text: str,
     seed: int,
     max_new_tokens: int,
@@ -93,8 +93,8 @@ def dtg_beta(
     target: str = "<|long|>",
     banned_tags: str = "",
 ) -> str:
-    """DanTagGen-beta from https://huggingface.co/KBlueLeaf/DanTagGen-beta"""
-    if not enable_dtgbeta:
+    """DanTagGen from https://huggingface.co/collections/KBlueLeaf/dantaggen-65f82fa9335881a67573556b"""
+    if not enable_dtg:
         return ""
 
     set_seed(seed)

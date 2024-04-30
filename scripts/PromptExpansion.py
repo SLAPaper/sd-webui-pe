@@ -2,7 +2,7 @@ import typing as tg
 
 import gradio as gr
 import gradio.components.base as gr_base
-from pe_libs.dtg_beta import dtg_beta
+from pe_libs.dtg import dtg as _dtg
 from pe_libs.pe import PromptsExpansion
 from pe_libs.super_prompt import super_prompt
 
@@ -38,7 +38,7 @@ class PromptExpansion(scripts.Script):
                         choices=[
                             "Fooocus V2",
                             "SuperPrompt v1",
-                            "DanTagGen-beta",
+                            "DanTagGen",
                         ],
                         value="Fooocus V2",
                         label="Model use for prompt expansion",
@@ -71,31 +71,31 @@ class PromptExpansion(scripts.Script):
                             ],
                             value="<|empty|>",
                             label=(
-                                "DanTagGen beta Rating, "
+                                "DanTagGen Rating, "
                                 "use <|empty|> for no rating tendency"
                             ),
                         )
                         dtg_artist = gr.Textbox(
                             value="",
-                            label="DanTagGen beta Artist",
+                            label="DanTagGen Artist",
                             placeholder=(
-                                "Artist tag for DanTagGen beta, "
+                                "Artist tag for DanTagGen, "
                                 "leave empty to use <|empty|>"
                             ),
                         )
                         dtg_chara = gr.Textbox(
                             value="",
-                            label="DanTagGen beta Characters",
+                            label="DanTagGen Characters",
                             placeholder=(
-                                "Characters tag for DanTagGen beta, "
+                                "Characters tag for DanTagGen, "
                                 "leave empty to use <|empty|>"
                             ),
                         )
                         dtg_copy = gr.Textbox(
                             value="",
-                            label="DanTagGen beta Copyrights(Series)",
+                            label="DanTagGen Copyrights(Series)",
                             placeholder=(
-                                "Copyrights(Series) tag for DanTagGen beta, "
+                                "Copyrights(Series) tag for DanTagGen, "
                                 "leave empty to use <|empty|>"
                             ),
                         )
@@ -103,15 +103,15 @@ class PromptExpansion(scripts.Script):
                             ["very_short", "short", "long", "very_long"],
                             value="long",
                             label=(
-                                "DanTagGen beta Target length, "
+                                "DanTagGen Target length, "
                                 "short or long is recommended"
                             ),
                         )
                         dtg_banned = gr.Textbox(
                             value="",
-                            label="DanTagGen beta banned tags",
+                            label="DanTagGen banned tags",
                             placeholder=(
-                                "Banned tags for DanTagGen beta, seperated by comma"
+                                "Banned tags for DanTagGen, seperated by comma"
                             ),
                         )
 
@@ -160,15 +160,13 @@ class PromptExpansion(scripts.Script):
                     and int(str(opts.data["SuperPrompt_V1_Max_Tokens"])) > 0
                 ):
                     max_new_tokens = int(str(opts.data["SuperPrompt_V1_Max_Tokens"]))
-            case "DanTagGen-beta":
+            case "DanTagGen":
                 if (
-                    "DanTagGen_beta_Max_New_Tokens" in opts.data
-                    and opts.data["DanTagGen_beta_Max_New_Tokens"] is not None
-                    and int(str(opts.data["DanTagGen_beta_Max_New_Tokens"])) > 0
+                    "DanTagGen_Max_New_Tokens" in opts.data
+                    and opts.data["DanTagGen_Max_New_Tokens"] is not None
+                    and int(str(opts.data["DanTagGen_Max_New_Tokens"])) > 0
                 ):
-                    max_new_tokens = int(
-                        str(opts.data["DanTagGen_beta_Max_New_Tokens"])
-                    )
+                    max_new_tokens = int(str(opts.data["DanTagGen_Max_New_Tokens"]))
             case _:
                 raise NotImplementedError(f"Model {model_selection} not implemented")
 
@@ -184,8 +182,8 @@ class PromptExpansion(scripts.Script):
                         positivePrompt = sp
                     else:
                         positivePrompt = f"{prompt}, BREAK, {sp}"
-                case "DanTagGen-beta":
-                    dtg = dtg_beta(
+                case "DanTagGen":
+                    dtg = _dtg(
                         prompt,
                         p.all_seeds[i],
                         max_new_tokens,
@@ -254,10 +252,10 @@ def on_ui_settings():
         ),
     )
     opts.add_option(
-        "DanTagGen_beta_Max_New_Tokens",
+        "DanTagGen_Max_New_Tokens",
         shared.OptionInfo(
             default=0,
-            label="Max new token length for DanTagGen-beta (Set to 0 to fill up remaining tokens of 75*k)",
+            label="Max new token length for DanTagGen (Set to 0 to fill up remaining tokens of 75*k)",
             component=gr.Slider,
             component_args={
                 "minimum": 0,
