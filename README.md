@@ -107,3 +107,7 @@ This model is suitable for models that use danbooru tags, such as Kohaku-XL.
 ## Update 2024/05/01
 
 - Changed DanTagGen support to any version in [HF collections](https://huggingface.co/collections/KBlueLeaf/dantaggen-65f82fa9335881a67573556b)
+
+## Update 2024/05/27
+
+- Added sampling parameters in Advanced Option, so that you can control the output randomness.

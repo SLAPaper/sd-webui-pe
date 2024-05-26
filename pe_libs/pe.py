@@ -1,7 +1,7 @@
 import functools as ft
 
 import torch
-from transformers import AutoModelForCausalLM, GPT2TokenizerFast
+from transformers import AutoModelForCausalLM, GPT2Model, GPT2TokenizerFast
 from transformers.generation.logits_process import LogitsProcessorList
 
 from .utils import model_management, model_path, neg_inf, set_seed
@@ -45,7 +45,7 @@ class PromptsExpansion:
 
         print(f"Prompt Expansion: Vocab with {len(debug_list)} words.")
 
-        self.model = AutoModelForCausalLM.from_pretrained(
+        self.model: GPT2Model = AutoModelForCausalLM.from_pretrained(
             expansion_path, local_files_only=True
         )
         self.model.eval()
@@ -62,7 +62,9 @@ class PromptsExpansion:
             return scores + bias
 
     @ft.lru_cache(maxsize=1024)
-    def __call__(self, prompt: str, seed: int, max_new_tokens) -> str:
+    def __call__(
+        self, prompt: str, seed: int, max_new_tokens: int, top_k: int = 100
+    ) -> str:
         if prompt == "":
             return ""
 
@@ -88,7 +90,7 @@ class PromptsExpansion:
             # https://huggingface.co/docs/transformers/generation_strategies
             features = self.model.generate(
                 **tokenized_kwargs,
-                top_k=100,
+                top_k=top_k,
                 max_new_tokens=max_new_tokens,
                 do_sample=True,
                 logits_processor=LogitsProcessorList([self.logits_processor]),

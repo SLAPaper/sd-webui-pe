@@ -84,6 +84,10 @@ def dtg(
     text: str,
     seed: int,
     max_new_tokens: int,
+    temperature: float = 1.35,
+    top_k: int = 100,
+    top_p: float = 0.95,
+    repetition_penalty: float = 1.17,
     *,
     rating: str = "<|empty|>",
     artist: str = "<|empty|>",
@@ -125,10 +129,10 @@ def dtg(
             outputs = model.generate(
                 input_ids,
                 max_new_tokens=max_new_tokens,
-                temperature=1.35,
-                top_p=0.95,
-                top_k=100,
-                repetition_penalty=1.17,
+                temperature=temperature,
+                top_k=top_k,
+                top_p=top_p,
+                repetition_penalty=repetition_penalty,
                 do_sample=True,
             )
             output_ids = outputs[0][input_ids.shape[1] :]

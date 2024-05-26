@@ -45,7 +45,15 @@ model = tg.cast(
 
 
 @ft.lru_cache(maxsize=1024)
-def super_prompt(text: str, seed: int, max_new_tokens: int, prompt: str) -> str:
+def super_prompt(
+    text: str,
+    seed: int,
+    max_new_tokens: int,
+    prompt: str,
+    temperature: float = 0.7,
+    top_k: int = 50,
+    top_p: float = 0.95,
+) -> str:
     """SuperPrompt v1 from https://huggingface.co/roborovski/superprompt-v1"""
     if not enable_superprompt:
         return ""
@@ -70,9 +78,9 @@ def super_prompt(text: str, seed: int, max_new_tokens: int, prompt: str) -> str:
             input_ids,
             max_length=max_new_tokens,
             do_sample=True,
-            temperature=0.7,
-            top_k=50,
-            top_p=0.95,
+            temperature=temperature,
+            top_k=top_k,
+            top_p=top_p,
         )
         model_management.offload(model)
 

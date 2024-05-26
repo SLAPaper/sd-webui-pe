@@ -52,6 +52,14 @@ class PromptExpansion(scripts.Script):
                         )
                 with FormRow():
                     with gr.Accordion("Advanced Options", open=False):
+                        fv2_topk = gr.Number(
+                            value=100,
+                            label="Fooocus V2 TopK",
+                            min_value=1,
+                            placeholder=(
+                                "TopK for Fooocus V2, the smaller the less randomness"
+                            ),
+                        )
                         sp_prompt = gr.Textbox(
                             value="",
                             label="SuperPrompt v1 Custom Prompt",
@@ -59,6 +67,71 @@ class PromptExpansion(scripts.Script):
                                 "Custom Prompt for SuperPrompt v1, "
                                 "original prompt is appended followed, "
                                 "leave empty to use default"
+                            ),
+                        )
+                        sp_temperature = gr.Number(
+                            value=0.7,
+                            label="SuperPrompt v1 Temperature",
+                            min_value=0.0,
+                            max_value=2.0,
+                            placeholder=(
+                                "Temperature for SuperPrompt v1, "
+                                "the higher the more randomness"
+                            ),
+                        )
+                        sp_topk = gr.Number(
+                            value=50,
+                            label="SuperPrompt v1 TopK",
+                            min_value=1,
+                            placeholder=(
+                                "TopK for SuperPrompt v1, the smaller the less randomness"
+                            ),
+                        )
+                        sp_topp = gr.Number(
+                            value=0.95,
+                            label="SuperPrompt v1 TopP",
+                            min_value=0.0,
+                            max_value=1.0,
+                            placeholder=(
+                                "TopP for SuperPrompt v1, "
+                                "the higher the more randomness"
+                            ),
+                        )
+                        dtg_temperature = gr.Number(
+                            value=1.35,
+                            label="DanTagGen Temperature",
+                            min_value=0.0,
+                            max_value=2.0,
+                            placeholder=(
+                                "Temperature for DanTagGen, "
+                                "the higher the more randomness"
+                            ),
+                        )
+                        dtg_topk = gr.Number(
+                            value=100,
+                            label="DanTagGen TopK",
+                            min_value=1,
+                            placeholder=(
+                                "TopK for DanTagGen, the smaller the less randomness"
+                            ),
+                        )
+                        dtg_topp = gr.Number(
+                            value=0.95,
+                            label="DanTagGen TopP",
+                            min_value=0.0,
+                            max_value=1.0,
+                            placeholder=(
+                                "TopP for DanTagGen, " "the higher the more randomness"
+                            ),
+                        )
+                        dtg_repeat_penalty = gr.Number(
+                            value=1.17,
+                            label="DanTagGen Repeat Penalty",
+                            min_value=0.0,
+                            max_value=2.0,
+                            placeholder=(
+                                "Repeat penalty for DanTagGen, "
+                                "the higher the less repeated tokens"
                             ),
                         )
                         dtg_rating = gr.Radio(
@@ -111,7 +184,7 @@ class PromptExpansion(scripts.Script):
                             value="",
                             label="DanTagGen banned tags",
                             placeholder=(
-                                "Banned tags for DanTagGen, seperated by comma"
+                                "Banned tags for DanTagGen, seperated by comma, case insensitive"
                             ),
                         )
 
@@ -119,7 +192,15 @@ class PromptExpansion(scripts.Script):
             is_enabled,
             model_selection,
             discard_original,
+            fv2_topk,
             sp_prompt,
+            sp_temperature,
+            sp_topk,
+            sp_topp,
+            dtg_temperature,
+            dtg_topk,
+            dtg_topp,
+            dtg_repeat_penalty,
             dtg_rating,
             dtg_artist,
             dtg_chara,
@@ -135,13 +216,24 @@ class PromptExpansion(scripts.Script):
 
         model_selection: str = args[1]
         discard_original: bool = args[2]
-        sp_prompt: str = args[3]
-        dtg_rating: str = args[4]
-        dtg_artist: str = args[5]
-        dtg_chara: str = args[6]
-        dtg_copy: str = args[7]
-        dtg_target: str = args[8]
-        dtg_banned: str = args[9]
+
+        fv2_topk: int = args[3]
+
+        sp_prompt: str = args[4]
+        sp_temperature: float = args[5]
+        sp_topk: int = args[6]
+        sp_topp: float = args[7]
+
+        dtg_temperature: float = args[8]
+        dtg_topk: int = args[9]
+        dtg_topp: float = args[10]
+        dtg_repeat_penalty: float = args[11]
+        dtg_rating: str = args[12]
+        dtg_artist: str = args[13]
+        dtg_chara: str = args[14]
+        dtg_copy: str = args[15]
+        dtg_target: str = args[16]
+        dtg_banned: str = args[17]
 
         opts = tg.cast(options.Options, shared.opts)
         max_new_tokens: int = 0
@@ -175,9 +267,19 @@ class PromptExpansion(scripts.Script):
         for i, prompt in enumerate(p.all_prompts):
             match model_selection:
                 case "Fooocus V2":
-                    positivePrompt = expansion(prompt, p.all_seeds[i], max_new_tokens)
+                    positivePrompt = expansion(
+                        prompt, p.all_seeds[i], max_new_tokens, top_k=fv2_topk
+                    )
                 case "SuperPrompt v1":
-                    sp = super_prompt(prompt, p.all_seeds[i], max_new_tokens, sp_prompt)
+                    sp = super_prompt(
+                        prompt,
+                        p.all_seeds[i],
+                        max_new_tokens,
+                        sp_prompt,
+                        temperature=sp_temperature,
+                        top_k=sp_topk,
+                        top_p=sp_topp,
+                    )
                     if discard_original:
                         positivePrompt = sp
                     else:
@@ -187,6 +289,10 @@ class PromptExpansion(scripts.Script):
                         prompt,
                         p.all_seeds[i],
                         max_new_tokens,
+                        temperature=dtg_temperature,
+                        top_k=dtg_topk,
+                        top_p=dtg_topp,
+                        repetition_penalty=dtg_repeat_penalty,
                         rating=dtg_rating if dtg_rating else "<|empty|>",
                         artist=dtg_artist if dtg_artist else "<|empty|>",
                         characters=dtg_chara if dtg_chara else "<|empty|>",
