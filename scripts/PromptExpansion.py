@@ -217,15 +217,15 @@ class PromptExpansion(scripts.Script):
         model_selection: str = args[1]
         discard_original: bool = args[2]
 
-        fv2_topk: int = args[3]
+        fv2_topk: int = int(args[3])
 
         sp_prompt: str = args[4]
         sp_temperature: float = args[5]
-        sp_topk: int = args[6]
+        sp_topk: int = int(args[6])
         sp_topp: float = args[7]
 
         dtg_temperature: float = args[8]
-        dtg_topk: int = args[9]
+        dtg_topk: int = int(args[9])
         dtg_topp: float = args[10]
         dtg_repeat_penalty: float = args[11]
         dtg_rating: str = args[12]

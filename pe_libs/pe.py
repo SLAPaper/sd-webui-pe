@@ -90,7 +90,7 @@ class PromptsExpansion:
             # https://huggingface.co/docs/transformers/generation_strategies
             features = self.model.generate(
                 **tokenized_kwargs,
-                top_k=top_k,
+                top_k=int(top_k),
                 max_new_tokens=max_new_tokens,
                 do_sample=True,
                 logits_processor=LogitsProcessorList([self.logits_processor]),

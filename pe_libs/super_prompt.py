@@ -79,7 +79,7 @@ def super_prompt(
             max_length=max_new_tokens,
             do_sample=True,
             temperature=temperature,
-            top_k=top_k,
+            top_k=int(top_k),
             top_p=top_p,
         )
         model_management.offload(model)

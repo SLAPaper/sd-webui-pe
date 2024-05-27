@@ -130,7 +130,7 @@ def dtg(
                 input_ids,
                 max_new_tokens=max_new_tokens,
                 temperature=temperature,
-                top_k=top_k,
+                top_k=int(top_k),
                 top_p=top_p,
                 repetition_penalty=repetition_penalty,
                 do_sample=True,
