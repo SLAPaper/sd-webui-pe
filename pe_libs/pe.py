@@ -1,12 +1,47 @@
 import functools as ft
+import logging
+import pathlib
+import shutil
 
 import torch
 from transformers import AutoModelForCausalLM, GPT2Model, GPT2TokenizerFast
 from transformers.generation.logits_process import LogitsProcessorList
 
-from .utils import model_management, model_path, neg_inf, set_seed
+from .utils import curr_path, model_management, model_path, neg_inf, set_seed
 
 expansion_path = model_path / "expansion"
+
+
+def load_file_from_url(
+    url: str,
+    *,
+    model_dir: pathlib.Path,
+    progress: bool = True,
+    file_name: str,
+) -> None:
+    """Download a file from `url` into `model_dir`, using the file present if possible."""
+    model_dir.mkdir(parents=True, exist_ok=True)
+    cached_file = model_dir / file_name
+
+    if not cached_file.exists():
+        logging.info(f'Downloading: "{url}" to {cached_file}')
+
+        from torch.hub import download_url_to_file
+
+        download_url_to_file(url, str(cached_file), progress=progress)
+
+
+def download_models() -> None:
+    load_file_from_url(
+        url="https://huggingface.co/lllyasviel/misc/resolve/main/fooocus_expansion.bin",
+        model_dir=expansion_path,
+        file_name="pytorch_model.bin",
+    )
+
+
+if not expansion_path.exists():
+    shutil.copytree(curr_path / "expansion", expansion_path)
+    download_models()
 
 
 def safe_str(x):
