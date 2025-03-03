@@ -5,6 +5,7 @@ import gradio.components.base as gr_base
 from pe_libs.dtg import dtg as _dtg
 from pe_libs.pe import PromptsExpansion
 from pe_libs.super_prompt import super_prompt
+from pe_libs.tipo import tipo as _tipo
 
 from modules import options, script_callbacks, scripts, shared
 from modules.processing import StableDiffusionProcessing
@@ -18,7 +19,7 @@ class PromptExpansion(scripts.Script):
         super().__init__()
 
     def title(self) -> str:
-        return "Prompt Expansion 1.0"
+        return "Prompt Expansion 1.1"
 
     def show(self, is_img2img: bool):
         return scripts.AlwaysVisible
@@ -39,8 +40,9 @@ class PromptExpansion(scripts.Script):
                             "Fooocus V2",
                             "SuperPrompt v1",
                             "DanTagGen",
+                            "TIPO",
                         ],
-                        value="Fooocus V2",
+                        value="TIPO",
                         label="Model use for prompt expansion",
                     )
                 with FormRow():
@@ -98,30 +100,30 @@ class PromptExpansion(scripts.Script):
                             ),
                         )
                         dtg_temperature = gr.Number(
-                            value=1.35,
-                            label="DanTagGen Temperature",
+                            value=0.5,
+                            label="DanTagGen/TIPO Temperature",
                             min_value=0.0,
                             max_value=2.0,
                             placeholder=(
-                                "Temperature for DanTagGen, "
+                                "Temperature for DanTagGen/TIPO, "
                                 "the higher the more randomness"
                             ),
                         )
                         dtg_topk = gr.Number(
-                            value=100,
-                            label="DanTagGen TopK",
+                            value=80,
+                            label="DanTagGen/TIPO TopK",
                             min_value=1,
                             placeholder=(
-                                "TopK for DanTagGen, the smaller the less randomness"
+                                "TopK for DanTagGen/TIPO, the smaller the less randomness"
                             ),
                         )
                         dtg_topp = gr.Number(
                             value=0.95,
-                            label="DanTagGen TopP",
+                            label="DanTagGen/TIPO TopP",
                             min_value=0.0,
                             max_value=1.0,
                             placeholder=(
-                                "TopP for DanTagGen, " "the higher the more randomness"
+                                "TopP for DanTagGen/TIPO, " "the higher the more randomness"
                             ),
                         )
                         dtg_repeat_penalty = gr.Number(
@@ -144,31 +146,31 @@ class PromptExpansion(scripts.Script):
                             ],
                             value="<|empty|>",
                             label=(
-                                "DanTagGen Rating, "
+                                "DanTagGen/TIPO Rating, "
                                 "use <|empty|> for no rating tendency"
                             ),
                         )
                         dtg_artist = gr.Textbox(
                             value="",
-                            label="DanTagGen Artist",
+                            label="DanTagGen/TIPO Artist",
                             placeholder=(
-                                "Artist tag for DanTagGen, "
+                                "Artist tag for DanTagGen/TIPO, "
                                 "leave empty to use <|empty|>"
                             ),
                         )
                         dtg_chara = gr.Textbox(
                             value="",
-                            label="DanTagGen Characters",
+                            label="DanTagGen/TIPO Characters",
                             placeholder=(
-                                "Characters tag for DanTagGen, "
+                                "Characters tag for DanTagGen/TIPO, "
                                 "leave empty to use <|empty|>"
                             ),
                         )
                         dtg_copy = gr.Textbox(
                             value="",
-                            label="DanTagGen Copyrights(Series)",
+                            label="DanTagGen/TIPO Copyrights(Series)",
                             placeholder=(
-                                "Copyrights(Series) tag for DanTagGen, "
+                                "Copyrights(Series) tag for DanTagGen/TIPO, "
                                 "leave empty to use <|empty|>"
                             ),
                         )
@@ -176,15 +178,15 @@ class PromptExpansion(scripts.Script):
                             ["very_short", "short", "long", "very_long"],
                             value="long",
                             label=(
-                                "DanTagGen Target length, "
+                                "DanTagGen/TIPO Target length, "
                                 "short or long is recommended"
                             ),
                         )
                         dtg_banned = gr.Textbox(
                             value="",
-                            label="DanTagGen banned tags",
+                            label="DanTagGen/TIPO banned tags",
                             placeholder=(
-                                "Banned tags for DanTagGen, seperated by comma, case insensitive"
+                                "Banned tags for DanTagGen/TIPO, seperated by comma, case insensitive"
                             ),
                         )
 
@@ -259,6 +261,8 @@ class PromptExpansion(scripts.Script):
                     and int(str(opts.data["DanTagGen_Max_New_Tokens"])) > 0
                 ):
                     max_new_tokens = int(str(opts.data["DanTagGen_Max_New_Tokens"]))
+            case "TIPO":
+                pass
             case _:
                 raise NotImplementedError(f"Model {model_selection} not implemented")
 
@@ -302,6 +306,38 @@ class PromptExpansion(scripts.Script):
                         banned_tags=dtg_banned,
                     )
                     positivePrompt = f"{prompt}, {dtg}"
+                case "TIPO":
+                    tipo = _tipo(
+                        prompt,
+                        p.all_seeds[i],
+                        temperature=dtg_temperature,
+                        top_k=dtg_topk,
+                        top_p=dtg_topp,
+                        aspect_ratio=p.width / p.height,
+                        target=dtg_target if dtg_target else "long",
+                        ban_tags=dtg_banned,
+                        rating=(
+                            dtg_rating
+                            if dtg_rating and dtg_rating != "<|empty|>"
+                            else ""
+                        ),
+                        artist=(
+                            dtg_artist
+                            if dtg_artist and dtg_artist != "<|empty|>"
+                            else ""
+                        ),
+                        characters=(
+                            dtg_chara
+                            if dtg_chara and dtg_chara != "<|empty|>"
+                            else ""
+                        ),
+                        copyrights=(
+                            dtg_copy
+                            if dtg_copy and dtg_copy != "<|empty|>"
+                            else ""
+                        ),
+                    )
+                    positivePrompt = f"{tipo}"
                 case _:
                     raise NotImplementedError(
                         f"Model {model_selection} not implemented"

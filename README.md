@@ -6,7 +6,7 @@ For online using, checkout the [HuggingFace Space](https://huggingface.co/spaces
 
 ## 2023/11/04 更新
 
-Fooocus V2动态提示功能的Webui移植，安装之后首次运行会自动从 https://huggingface.co/lllyasviel/misc/resolve/main/fooocus_expansion.bin 下载GPT-2模型，并保存到插件目录下的 `models/expansion/pytorch_model.bin`
+Fooocus V2动态提示功能的Webui移植，安装之后首次运行会自动从 [fooocus_expansion.bin](https://huggingface.co/lllyasviel/misc/resolve/main/fooocus_expansion.bin) 下载GPT-2模型，并保存到插件目录下的 `models/expansion/pytorch_model.bin`
 
 如果自动下载失败，可以自己手动下载。
 
@@ -20,7 +20,7 @@ Fooocus V2动态提示功能的Webui移植，安装之后首次运行会自动�
 ![image](https://github.com/facok/sd-webui-pe/assets/128763816/39ee44c4-eed3-4e85-b4c8-d3e0692c85f7)
 
 关于Fooocus V2原版功能介绍：
-https://github.com/lllyasviel/Fooocus/discussions/117#raw
+[https://github.com/lllyasviel/Fooocus/discussions/117](https://github.com/lllyasviel/Fooocus/discussions/117#raw)
 
 ## 2024/03/16 更新
 
@@ -55,11 +55,25 @@ https://github.com/lllyasviel/Fooocus/discussions/117#raw
 
 - 将 DanTagGen 支持改为 [HF collections](https://huggingface.co/collections/KBlueLeaf/dantaggen-65f82fa9335881a67573556b) 里的任意版本
 
+## 2025/03/04 更新
+
+新增 TIPO [https://huggingface.co/KBlueLeaf/TIPO-500M-ft](https://huggingface.co/KBlueLeaf/TIPO-500M-ft)
+
+请手动下载 [TIPO-500M-ft-F16.gguf](https://huggingface.co/KBlueLeaf/TIPO-500M-ft/blob/main/TIPO-500M-ft-F16.gguf) 到插件目录下的 `models/TIPO` 下
+
+可以通过启动参数 `--pe-model-path` 来指定模型目录
+
+本模型通用于自然语言和Danbooru 标签的模型
+
+依赖 KGen [https://github.com/KohakuBlueleaf/KGen](https://github.com/KohakuBlueleaf/KGen)
+
+依赖 llama_cpp [https://github.com/abetlen/llama-cpp-python](https://github.com/abetlen/llama-cpp-python)
+
 ## Below is English Version
 
 ## Update 2023/11/04
 
-WebUI port of Fooocus V2 dynamic prompt expansion. Upon installation and first run, it automatically downloads the GPT-2 model from https://huggingface.co/lllyasviel/misc/resolve/main/fooocus_expansion.bin and saves it to `models/expansion/pytorch_model.bin` in the plugin directory.
+WebUI port of Fooocus V2 dynamic prompt expansion. Upon installation and first run, it automatically downloads the GPT-2 model from [fooocus_expansion.bin](https://huggingface.co/lllyasviel/misc/resolve/main/fooocus_expansion.bin) and saves it to `models/expansion/pytorch_model.bin` in the plugin directory.
 
 If the automatic download fails, you can download it manually.
 
@@ -73,7 +87,7 @@ After enabling:
 ![image](https://github.com/facok/sd-webui-pe/assets/128763816/39ee44c4-eed3-4e85-b4c8-d3e0692c85f7)
 
 For more information on the original Fooocus V2 feature, visit:
-https://github.com/lllyasviel/Fooocus/discussions/117#raw
+[https://github.com/lllyasviel/Fooocus/discussions/117](https://github.com/lllyasviel/Fooocus/discussions/117#raw)
 
 ## Update 2024/03/16
 
@@ -111,3 +125,17 @@ This model is suitable for models that use danbooru tags, such as Kohaku-XL.
 ## Update 2024/05/27
 
 - Added sampling parameters in Advanced Option, so that you can control the output randomness.
+
+## Update 2025/03/04
+
+Added TIPO [https://huggingface.co/KBlueLeaf/TIPO-500M-ft](https://huggingface.co/KBlueLeaf/TIPO-500M-ft)
+
+Please manually download the file [TIPO-500M-ft-F16.gguf](https://huggingface.co/KBlueLeaf/TIPO-500M-ft/blob/main/TIPO-500M-ft-F16.gguf) and save it to the `models/TIPO` directory under the plugin directory
+
+The model directory can be specified through the startup parameter `--pe-model-path`
+
+This model is universally applicable to both natural language and Danbooru tagging
+
+Depends on KGen [https://github.com/KohakuBlueleaf/KGen](https://github.com/KohakuBlueleaf/KGen)
+
+Dependency on llama_cpp [https://github.com/abetlen/llama-cpp-python](https://github.com/abetlen/llama-cpp-python)

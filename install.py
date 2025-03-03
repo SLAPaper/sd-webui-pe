@@ -21,6 +21,12 @@ def install_deps() -> None:
     if not launch.is_installed("yaml"):
         launch.run_pip("install PyYAML")
 
+    if not launch.is_installed("tipo-kgen"):
+        launch.run_pip("install tipo-kgen")
+
+    if not launch.is_installed("llama-cpp-python"):
+        launch.run_pip("install llama-cpp-python")
+
 
 def install() -> None:
     install_deps()
