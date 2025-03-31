@@ -143,6 +143,8 @@ def process(
     characters: list[str] = [],
     copyrights: list[str] = [],
     no_formatting: bool = False,
+    nl_prompt: str = "",
+
 ) -> str:
     """process TIPO"""
     prompt = prompt.strip()
@@ -157,7 +159,6 @@ def process(
     prompt_without_extranet, res = parse_prompt(prompt)
     prompt_parse_strength = parse_prompt_attention(prompt_without_extranet)
 
-    nl_prompt = ""
     strength_map_nl: list = []
 
     rebuild_extranet = ""
@@ -271,6 +272,7 @@ def tipo(
     artist: str = "",
     characters: str = "",
     copyrights: str = "",
+    nl_prompt: str = "",
 ) -> str:
     """generate tags using tipo"""
     if not enable_tipo:
@@ -303,6 +305,7 @@ def tipo(
         artist=[artist] if artist else [],
         characters=[characters] if characters else [],
         copyrights=[copyrights] if copyrights else [],
+        nl_prompt=nl_prompt,
     )
     t1 = time.time_ns()
     logger.info(f"Result:\n{result}")

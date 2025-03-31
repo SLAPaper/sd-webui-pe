@@ -5,7 +5,7 @@ import gradio.components.base as gr_base
 from pe_libs.dtg import dtg as _dtg
 from pe_libs.pe import PromptsExpansion
 from pe_libs.super_prompt import super_prompt
-from pe_libs.tipo import tipo as _tipo
+from pe_libs.tipo import DEFAULT_FORMAT, tipo as _tipo
 
 from modules import options, script_callbacks, scripts, shared
 from modules.processing import StableDiffusionProcessing
@@ -189,6 +189,17 @@ class PromptExpansion(scripts.Script):
                                 "Banned tags for DanTagGen/TIPO, seperated by comma, case insensitive"
                             ),
                         )
+                        tipo_treat_nl_prompt = gr.Checkbox(
+                            False,
+                            label="Tipo Treat NL Prompt",
+                            info="if enabled, Tipo will treat the line begin with nl: as nl prompt",
+                        )
+                        tipo_format = gr.TextArea(
+                            DEFAULT_FORMAT,
+                            label="Tipo Generated Format",
+                            placeholder="leave empty to use default format",
+                            info="add <|extended|> to get nl prompt, use <|generated|> to get full nl prompt"
+                        )
 
         return [
             is_enabled,
@@ -209,6 +220,8 @@ class PromptExpansion(scripts.Script):
             dtg_copy,
             dtg_target,
             dtg_banned,
+            tipo_treat_nl_prompt,
+            tipo_format,
         ]
 
     def process(self, p: StableDiffusionProcessing, *args) -> None:
@@ -236,6 +249,9 @@ class PromptExpansion(scripts.Script):
         dtg_copy: str = args[15]
         dtg_target: str = args[16]
         dtg_banned: str = args[17]
+
+        tipo_treat_nl_prompt: bool = args[18]
+        tipo_format: str = args[19]
 
         opts = tg.cast(options.Options, shared.opts)
         max_new_tokens: int = 0
@@ -307,6 +323,19 @@ class PromptExpansion(scripts.Script):
                     )
                     positivePrompt = f"{prompt}, {dtg}"
                 case "TIPO":
+                    nl_prompt = ""
+                    if tipo_treat_nl_prompt:
+                        tag_lines = []
+                        nl_lines = []
+                        for line in prompt.splitlines():
+                            if line.startswith("nl:"):
+                                nl_lines.append(line[len('nl:'):])
+                            else:
+                                tag_lines.append(line)
+                        
+                        prompt = '\n'.join(tag_lines)
+                        nl_prompt = '\n'.join(nl_lines)
+
                     tipo = _tipo(
                         prompt,
                         p.all_seeds[i],
@@ -336,6 +365,8 @@ class PromptExpansion(scripts.Script):
                             if dtg_copy and dtg_copy != "<|empty|>"
                             else ""
                         ),
+                        format=tipo_format if tipo_format else DEFAULT_FORMAT,
+                        nl_prompt = nl_prompt,
                     )
                     positivePrompt = f"{tipo}"
                 case _:
