@@ -51,7 +51,7 @@ class ModelManagement:
         except:
             # a1111
             from modules import devices  # type: ignore
-            
+
             self.offload_device = devices.cpu
             self.load_device = devices.get_optimal_device()
 

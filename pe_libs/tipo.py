@@ -36,8 +36,8 @@ from kgen.formatter import apply_format, seperate_tags
 from kgen.logging import logger
 
 from modules.extra_networks import parse_prompt
-from modules.prompt_parser import parse_prompt_attention
 
+from .prompt_utils import parse_prompt_attention
 from .utils import model_path
 
 SEED_MAX = 2**31 - 1
@@ -159,7 +159,14 @@ def process(
     prompt_without_extranet, res = parse_prompt(prompt)
     prompt_parse_strength = parse_prompt_attention(prompt_without_extranet)
 
+    nl_prompt_parse_strength = parse_prompt_attention(nl_prompt)
+    nl_prompt = ""
     strength_map_nl: list = []
+    for part, strength in nl_prompt_parse_strength:
+        nl_prompt += part
+        if strength == 1:
+            continue
+        strength_map_nl.append((part, strength))
 
     rebuild_extranet = ""
     for name, params in res.items():
