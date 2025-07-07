@@ -126,6 +126,15 @@ class PromptExpansion(scripts.Script):
                                 "TopP for DanTagGen/TIPO, " "the higher the more randomness"
                             ),
                         )
+                        dtg_minp = gr.Number(
+                            value=0.05,
+                            label="DanTagGen/TIPO MinP",
+                            min_value=0.0,
+                            max_value=1.0,
+                            placeholder=(
+                                "MinP for DanTagGen/TIPO, " "the higher the less randomness"
+                            ),
+                        )
                         dtg_repeat_penalty = gr.Number(
                             value=1.17,
                             label="DanTagGen Repeat Penalty",
@@ -222,6 +231,7 @@ class PromptExpansion(scripts.Script):
             dtg_banned,
             tipo_treat_nl_prompt,
             tipo_format,
+            dtg_minp,
         ]
 
     def process(self, p: StableDiffusionProcessing, *args) -> None:
@@ -252,6 +262,7 @@ class PromptExpansion(scripts.Script):
 
         tipo_treat_nl_prompt: bool = args[18]
         tipo_format: str = args[19]
+        dtg_minp: float = args[20]
 
         opts = tg.cast(options.Options, shared.opts)
         max_new_tokens: int = 0
@@ -342,6 +353,7 @@ class PromptExpansion(scripts.Script):
                         temperature=dtg_temperature,
                         top_k=dtg_topk,
                         top_p=dtg_topp,
+                        min_p=dtg_minp,
                         aspect_ratio=p.width / p.height,
                         target=dtg_target if dtg_target else "long",
                         ban_tags=dtg_banned,

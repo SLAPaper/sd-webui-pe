@@ -52,11 +52,13 @@ PROCESSING_TIMING = {
     "BEFORE": "Before applying other prompt processings",
     "AFTER": "After applying other prompt processings",
 }
-DEFAULT_FORMAT = """<|special|>,
-<|characters|>, <|copyrights|>,
-<|artist|>,
+DEFAULT_FORMAT = """<|special|>, 
+<|characters|>, <|copyrights|>, 
+<|artist|>, 
 
 <|general|>,
+
+<|extended|>.
 
 <|quality|>, <|meta|>, <|rating|>"""
 TIMING_INFO_TEMPLATE = (
@@ -136,6 +138,7 @@ def process(
     format: str,
     temperature: float,
     top_p: float,
+    min_p: float,
     top_k: int,
     special_tags: list[str] = [],
     rating: list[str] = [],
@@ -223,6 +226,7 @@ def process(
         nl_prompt,
         temperature=temperature,
         top_p=top_p,
+        min_p=min_p,
         top_k=top_k,
         seed=seed,
     )
@@ -268,6 +272,7 @@ def tipo(
     seed: int,
     temperature: float = 0.5,
     top_p: float = 0.95,
+    min_p: float = 0.05,
     top_k: int = 80,
     *,
     aspect_ratio: float = 1.0,
@@ -306,6 +311,7 @@ def tipo(
         format=format,
         temperature=temperature,
         top_p=top_p,
+        min_p=min_p,
         top_k=top_k,
         special_tags=[special_tags] if special_tags else [],
         rating=[rating] if rating else [],
